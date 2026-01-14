@@ -12,11 +12,18 @@ export const isMac = userAgent.includes("Macintosh");
 export const isLinux = userAgent.includes("Linux");
 /** 是否为 Electron 环境 */
 export const isElectron = userAgent.includes("Electron") || typeof window?.electron !== "undefined";
-
+/** 是否为 Capacitor 环境 */
+export const isCapacitor = typeof window?.Capacitor !== "undefined";
+/** 是否为 iOS 系统 */
+export const isIOS = userAgent.includes("iPhone") || userAgent.includes("iPad") || userAgent.includes("iPod");
+/** 是否为 Android 系统 */
+export const isAndroid = userAgent.includes("Android");
 /** 是否为移动端 */
-export const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+export const isMobile = isIOS || isAndroid || /webOS|BlackBerry|IEMobile|Opera Mini/i.test(
   userAgent,
 );
+/** 是否为桌面端 */
+export const isDesktop = isElectron || (!isMobile && !isCapacitor);
 
 /** 是否为 DEV 构建 */
 export const isDevBuild = import.meta.env.VITE_BUILD_TYPE === "dev";

@@ -110,5 +110,7 @@ declare global {
         sendSync(channel: string, ...args: any[]): any;
       };
     };
+    // Capacitor
+    Capacitor?: any;
   }
 }

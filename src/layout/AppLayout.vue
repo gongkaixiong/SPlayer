@@ -6,11 +6,13 @@
       :class="{
         'show-player': musicStore.isHasPlayer && statusStore.showPlayBar,
         'show-full-player': statusStore.showFullPlayer,
+        'mobile-layout': isMobile,
       }"
-      has-sider
+      :has-sider="!isMobile || statusStore.showSidebar"
     >
       <!-- 侧边栏 -->
       <n-layout-sider
+        v-if="!isMobile || statusStore.showSidebar"
         id="main-sider"
         :style="{
           height:
@@ -22,14 +24,14 @@
           padding: '0',
         }"
         :native-scrollbar="false"
-        :collapsed="statusStore.menuCollapsed"
+        :collapsed="isMobile ? false : statusStore.menuCollapsed"
         :collapsed-width="64"
         :width="240"
         collapse-mode="width"
-        show-trigger="bar"
+        :show-trigger="isMobile ? 'bar' : 'bar'"
         bordered
-        @collapse="statusStore.menuCollapsed = true"
-        @expand="statusStore.menuCollapsed = false"
+        @collapse="!isMobile && (statusStore.menuCollapsed = true)"
+        @expand="!isMobile && (statusStore.menuCollapsed = false)"
       >
         <Sider />
       </n-layout-sider>
@@ -47,7 +49,7 @@
             display: 'grid',
             gridTemplateRows: '1fr',
             minHeight: '100%',
-            padding: '0 24px',
+            padding: isMobile ? '0 12px' : '0 24px',
           }"
           position="absolute"
           embedded
@@ -62,7 +64,7 @@
             </Transition>
           </RouterView>
           <!-- 回顶 -->
-          <n-back-top :right="40" :bottom="120">
+          <n-back-top v-if="!isMobile" :right="40" :bottom="120">
             <SvgIcon :size="22" name="Up" />
           </n-back-top>
         </n-layout>
@@ -78,14 +80,20 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, watchEffect } from "vue";
 import { useMusicStore, useStatusStore, useSettingStore } from "@/stores";
 import { useBlobURLManager } from "@/core/resource/BlobURLManager";
-import { isElectron } from "@/utils/env";
+import { isElectron, isMobile } from "@/utils/env";
 import init from "@/utils/init";
 
 const musicStore = useMusicStore();
 const statusStore = useStatusStore();
 const settingStore = useSettingStore();
+
+// 初始化移动端侧边栏状态
+if (isMobile && !statusStore.hasOwnProperty('showSidebar')) {
+  statusStore.showSidebar = false;
+}
 
 const blobURLManager = useBlobURLManager();
 
@@ -153,6 +161,16 @@ onMounted(() => {
     transform: scale(0.9);
     #main-header {
       -webkit-app-region: no-drag;
+    }
+  }
+  &.mobile-layout {
+    // 移动端布局样式
+    #main-content {
+      padding: 0 12px;
+    }
+    #main-sider {
+      // 移动端侧边栏全屏显示
+      z-index: 1000;
     }
   }
 }

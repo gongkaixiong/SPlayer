@@ -36,6 +36,10 @@ app.mount("#app");
 // 初始化 ipc
 initIpc();
 
+// 初始化 iOS 功能
+import { IOSFeaturesManager } from './utils/ios-features';
+IOSFeaturesManager.init();
+
 // 根据设置判断是否要注册协议
 if (isElectron) {
   const settings = useSettingStore();

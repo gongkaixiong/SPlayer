@@ -84,9 +84,10 @@ export abstract class BaseAudioPlayer extends EventTarget implements IPlaybackEn
     try {
       this.audioCtx = new AudioContext() as IExtendedAudioContext;
 
-      if (this.audioCtx.state === "running") {
-        this.audioCtx.suspend().catch(console.warn);
-      }
+      // 保存初始状态，不自动暂停，因为 iOS 需要用户交互才能恢复
+      // if (this.audioCtx.state === "running") {
+      //   this.audioCtx.suspend().catch(console.warn);
+      // }
 
       this.inputNode = this.audioCtx.createGain();
       this.inputNode.gain.value = 1; // 直通

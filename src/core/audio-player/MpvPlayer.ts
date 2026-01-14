@@ -1,4 +1,5 @@
 import { getPlayerInfoObj } from "@/utils/format";
+import { isElectron } from "@/utils/env";
 import type {
   EngineCapabilities,
   IPlaybackEngine,
@@ -60,7 +61,7 @@ export class MpvPlayer extends EventTarget implements IPlaybackEngine {
 
   public init(): void {
     if (this.isInitialized) return;
-    if (!window?.electron?.ipcRenderer) return;
+    if (!isElectron || !window?.electron?.ipcRenderer) return;
 
     // 防止重复注册
     window.electron.ipcRenderer.removeAllListeners("mpv-property-change");
@@ -170,7 +171,7 @@ export class MpvPlayer extends EventTarget implements IPlaybackEngine {
   }
 
   public destroy(): void {
-    if (!window?.electron?.ipcRenderer) return;
+    if (!isElectron || !window?.electron?.ipcRenderer) return;
     window.electron.ipcRenderer.removeAllListeners("mpv-property-change");
     window.electron.ipcRenderer.removeAllListeners("mpv-file-loaded");
     window.electron.ipcRenderer.removeAllListeners("mpv-playback-restart");
@@ -179,6 +180,8 @@ export class MpvPlayer extends EventTarget implements IPlaybackEngine {
   }
 
   public async play(url?: string, options?: PlayOptions): Promise<void> {
+    if (!isElectron) return;
+    
     if (!this.isInitialized) this.init();
 
     const autoPlay = options?.autoPlay ?? true;
@@ -216,6 +219,8 @@ export class MpvPlayer extends EventTarget implements IPlaybackEngine {
   }
 
   public async resume(options?: { fadeIn?: boolean; fadeDuration?: number }): Promise<void> {
+    if (!isElectron) return;
+    
     // MPV 不支持渐入渐出，忽略 options
     void options;
 
@@ -224,6 +229,8 @@ export class MpvPlayer extends EventTarget implements IPlaybackEngine {
   }
 
   public pause(options?: PauseOptions): void {
+    if (!isElectron) return;
+    
     // MPV 不支持渐入渐出，忽略 options
     void options;
 
@@ -231,6 +238,8 @@ export class MpvPlayer extends EventTarget implements IPlaybackEngine {
   }
 
   public stop(): void {
+    if (!isElectron) return;
+    
     window.electron.ipcRenderer.send("mpv-stop");
     this._src = "";
     this._currentTime = 0;
@@ -240,10 +249,14 @@ export class MpvPlayer extends EventTarget implements IPlaybackEngine {
   }
 
   public seek(time: number): void {
+    if (!isElectron) return;
+    
     window.electron.ipcRenderer.send("mpv-seek", time);
   }
 
   public setVolume(value: number): void {
+    if (!isElectron) return;
+    
     this._volume = Math.max(0, Math.min(1, value));
     window.electron.ipcRenderer.send("mpv-set-volume", this._volume * 100);
   }
@@ -253,6 +266,8 @@ export class MpvPlayer extends EventTarget implements IPlaybackEngine {
   }
 
   public setRate(rate: number): void {
+    if (!isElectron) return;
+    
     this._rate = rate;
     window.electron.ipcRenderer.send("mpv-set-rate", rate);
   }
@@ -262,6 +277,8 @@ export class MpvPlayer extends EventTarget implements IPlaybackEngine {
   }
 
   public async setSinkId(deviceId: string): Promise<void> {
+    if (!isElectron) return;
+    
     const result = await window.electron.ipcRenderer.invoke("mpv-set-audio-device", deviceId);
     if (!result?.success) {
       console.warn("MPV 设置音频设备失败:", result?.error);

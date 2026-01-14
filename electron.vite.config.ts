@@ -102,7 +102,17 @@ export default defineConfig(({ mode }) => {
             index: resolve(__dirname, "index.html"),
             loading: resolve(__dirname, "web/loading/index.html"),
           },
-          external: ["smtc-for-splayer.node"],
+          external: [
+            "smtc-for-splayer.node",
+            "@capacitor/core",
+            "@capacitor/mediasession",
+            "@capacitor/app",
+            "@capacitor/filesystem",
+            "@capacitor/device",
+            "@capacitor/haptics",
+            "@capacitor/keyboard",
+            "@capacitor/splash-screen"
+          ],
           output: {
             manualChunks: {
               stores: ["src/stores/data.ts", "src/stores/index.ts"],

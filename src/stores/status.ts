@@ -7,6 +7,8 @@ import { defineStore } from "pinia";
 interface StatusState {
   /** 菜单折叠状态 */
   menuCollapsed: boolean;
+  /** 移动端侧边栏显示状态 */
+  showSidebar: boolean;
   /** 搜索框状态 */
   searchFocus: boolean;
   /** 搜索框输入值 */
@@ -110,6 +112,7 @@ interface StatusState {
 export const useStatusStore = defineStore("status", {
   state: (): StatusState => ({
     menuCollapsed: false,
+    showSidebar: false,
     searchFocus: false,
     searchInputValue: "",
     showPlayBar: true,

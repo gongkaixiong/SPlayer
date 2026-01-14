@@ -1,12 +1,14 @@
+import { toRaw } from "vue";
 import { usePlayerController } from "@/core/player/PlayerController";
 import { useDataStore, useMusicStore, useStatusStore } from "@/stores";
 import { SettingType } from "@/types/main";
 import { handleProtocolUrl } from "@/utils/protocol";
 import { cloneDeep } from "lodash-es";
 import { toLikeSong } from "./auth";
-import { isElectron } from "./env";
+import { isElectron, isCapacitor } from "./env";
 import { getPlayerInfoObj } from "./format";
 import { openSetting, openUpdateApp } from "./modal";
+import { IpcManager } from "./ipc-manager";
 
 // 关闭更新状态
 const closeUpdateStatus = () => {
@@ -17,46 +19,48 @@ const closeUpdateStatus = () => {
 // 全局 IPC 事件
 const initIpc = () => {
   try {
-    if (!isElectron) return;
+    // 只有在 Electron 或 Capacitor 环境下才初始化 IPC
+    if (!isElectron && !isCapacitor) return;
+    
     const player = usePlayerController();
     // 播放
-    window.electron.ipcRenderer.on("play", () => player.play());
+    IpcManager.on("play", () => player.play());
     // 暂停
-    window.electron.ipcRenderer.on("pause", () => player.pause());
+    IpcManager.on("pause", () => player.pause());
     // 播放或暂停
-    window.electron.ipcRenderer.on("playOrPause", () => player.playOrPause());
+    IpcManager.on("playOrPause", () => player.playOrPause());
     // 上一曲
-    window.electron.ipcRenderer.on("playPrev", () => player.nextOrPrev("prev"));
+    IpcManager.on("playPrev", () => player.nextOrPrev("prev"));
     // 下一曲
-    window.electron.ipcRenderer.on("playNext", () => player.nextOrPrev("next"));
+    IpcManager.on("playNext", () => player.nextOrPrev("next"));
     // 音量加
-    window.electron.ipcRenderer.on("volumeUp", () => player.setVolume("up"));
+    IpcManager.on("volumeUp", () => player.setVolume("up"));
     // 音量减
-    window.electron.ipcRenderer.on("volumeDown", () => player.setVolume("down"));
+    IpcManager.on("volumeDown", () => player.setVolume("down"));
     // 播放模式切换
-    window.electron.ipcRenderer.on("changeRepeat", (_, mode) => player.toggleRepeat(mode));
-    window.electron.ipcRenderer.on("toggleShuffle", (_, mode) => player.toggleShuffle(mode));
+    IpcManager.on("changeRepeat", (mode) => player.toggleRepeat(mode));
+    IpcManager.on("toggleShuffle", (mode) => player.toggleShuffle(mode));
     // 喜欢歌曲
-    window.electron.ipcRenderer.on("toggle-like-song", async () => {
+    IpcManager.on("toggle-like-song", async () => {
       const dataStore = useDataStore();
       const musicStore = useMusicStore();
       await toLikeSong(musicStore.playSong, !dataStore.isLikeSong(musicStore.playSong.id));
     });
     // 开启设置
-    window.electron.ipcRenderer.on("openSetting", (_, type: SettingType, scrollTo?: string) =>
+    IpcManager.on("openSetting", (type: SettingType, scrollTo?: string) =>
       openSetting(type, scrollTo),
     );
     // 桌面歌词开关
-    window.electron.ipcRenderer.on("toggle-desktop-lyric", () => player.toggleDesktopLyric());
+    IpcManager.on("toggle-desktop-lyric", () => player.toggleDesktopLyric());
     // 显式关闭桌面歌词
-    window.electron.ipcRenderer.on("close-desktop-lyric", () => player.setDesktopLyricShow(false));
+    IpcManager.on("close-desktop-lyric", () => player.setDesktopLyricShow(false));
     // 请求歌词数据
-    window.electron.ipcRenderer.on("request-desktop-lyric-data", () => {
+    IpcManager.on("request-desktop-lyric-data", () => {
       const musicStore = useMusicStore();
       const statusStore = useStatusStore();
       if (player) {
         const { name, artist } = getPlayerInfoObj() || {};
-        window.electron.ipcRenderer.send(
+        IpcManager.send(
           "update-desktop-lyric-data",
           cloneDeep({
             playStatus: statusStore.playStatus,
@@ -74,28 +78,28 @@ const initIpc = () => {
       }
     });
     // 无更新
-    window.electron.ipcRenderer.on("update-not-available", () => {
+    IpcManager.on("update-not-available", () => {
       closeUpdateStatus();
       window.$message.success("当前已是最新版本");
     });
     // 有更新
-    window.electron.ipcRenderer.on("update-available", (_, info) => {
+    IpcManager.on("update-available", (info) => {
       closeUpdateStatus();
       openUpdateApp(info);
     });
     // 更新错误
-    window.electron.ipcRenderer.on("update-error", (_, error) => {
+    IpcManager.on("update-error", (error) => {
       console.error("Error updating:", error);
       closeUpdateStatus();
       window.$message.error("更新过程出现错误");
     });
     // 协议数据
-    window.electron.ipcRenderer.on("protocol-url", (_, url) => {
+    IpcManager.on("protocol-url", (url) => {
       console.log("📡 Received protocol url:", url);
       handleProtocolUrl(url);
     });
     // 请求播放信息
-    window.electron.ipcRenderer.on("request-track-info", () => {
+    IpcManager.on("request-track-info", () => {
       const musicStore = useMusicStore();
       const statusStore = useStatusStore();
       const { name, artist, album } = getPlayerInfoObj() || {};
@@ -104,7 +108,7 @@ const initIpc = () => {
       const songLyric = statusStore.lyricLoading
         ? { lrcData: [], yrcData: [] }
         : toRaw(musicStore.songLyric);
-      window.electron.ipcRenderer.send(
+      IpcManager.send(
         "return-track-info",
         cloneDeep({
           playStatus: statusStore.playStatus,
